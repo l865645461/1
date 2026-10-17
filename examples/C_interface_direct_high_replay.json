@@ -1,0 +1,97 @@
+{
+  "interface_version": "A_B_C_replay_interface_v1_2_1",
+  "a_interface_version": "A_INTERFACE_V1.2.1",
+  "b_interface_version": "B_to_C_A_INTERFACE_V1_2_1_update_20261014",
+  "record_type": "A_B_historical_replay_input_for_C",
+  "replay_mode_note": "historical_shadow_replay_not_production_dispatch",
+  "port_call_id": "PC_202401_477166500_20240123T172010",
+  "mmsi": "477166500",
+  "current_replay_time_utc": "2024-01-23T13:19:30+00:00",
+  "current_a_status": {
+    "source_type": "unavailable/not_applicable",
+    "value": null,
+    "note": "historical event-derived stage is presentation-only"
+  },
+  "current_ais": {
+    "source_type": "observed_fact",
+    "ais_time_utc": "2024-01-23T13:19:30+00:00",
+    "lon": 122.986198,
+    "lat": 30.030399,
+    "sog_knots": 17.0,
+    "cog_deg": 1.7,
+    "heading_deg": null,
+    "ais_age_min": 0.0
+  },
+  "port_status": {
+    "source_type": "observed_fact",
+    "snapshot_time_utc": "2024-01-23T13:10:00+00:00",
+    "snapshot_age_min": 9.5,
+    "unique_inbound_vessels_60m": 0,
+    "unique_outbound_vessels_60m": 0,
+    "raw_crossing_semantics": "repeat_crossing_counts_not_vessel_counts"
+  },
+  "observed_formal_events": [],
+  "formal_event_online_input_policy": "disabled_unverified_availability_a_v1_2_1",
+  "vat_prediction": {
+    "source_type": "model_prediction",
+    "task": "VAT",
+    "model_version": "vat_stacking_v1",
+    "model_sha256": "f1b89fd5017a74d33f8d7594155c71654bcc9c4a7b1cc35125700f727b2708a4",
+    "feature_schema_version": "vat_feature_schema_v1",
+    "target_definition": "remaining minutes to the Yangshan Arrival Gate",
+    "prediction": 250.53347103102317,
+    "unit": "min_to_arrival_gate",
+    "prediction_time_utc": "2024-01-23T13:19:30+00:00",
+    "data_available_until_utc": "2024-01-23T13:19:30+00:00",
+    "prediction_age_min": 0.0,
+    "lead_time_definition": "elapsed_since_prediction",
+    "confidence": null,
+    "uncertainty": null,
+    "qc_flag": "ok",
+    "a_input_version": "yangshan_2024-01_fixed_inputs",
+    "a_input_sha256": "a232af40c1aebc9cb22a5669b92dea3e1518e70cc0ac63faf2a0775d29261560",
+    "a_context_interface_version": "A_INTERFACE_V1.2.1",
+    "historical_precomputed_source": "frozen_B_prediction_from_original_Stage2",
+    "prediction_lead_time_bin": "4-6h"
+  },
+  "direct_indirect_prediction": {
+    "source_type": "model_prediction",
+    "task": "DIRECT_INDIRECT",
+    "model_version": "direct_indirect_rf_v1",
+    "model_sha256": "2f6b6fb820b220a97d3f63205560104cb539fd08f08b1139c451b2f399ff21fc",
+    "feature_schema_version": "direct_indirect_feature_schema_v1",
+    "target_definition": "probability of Indirect under the No.1 Anchorage evidence definition",
+    "prediction": 0.0,
+    "unit": "probability_indirect",
+    "prediction_time_utc": "2024-01-23T13:19:30+00:00",
+    "data_available_until_utc": "2024-01-23T13:19:30+00:00",
+    "prediction_age_min": 0.0,
+    "lead_time_definition": "elapsed_since_prediction",
+    "confidence": 1.0,
+    "uncertainty": "uncalibrated_probability",
+    "qc_flag": "ok_uncalibrated",
+    "a_input_version": "yangshan_2024-01_fixed_inputs",
+    "a_input_sha256": "a232af40c1aebc9cb22a5669b92dea3e1518e70cc0ac63faf2a0775d29261560",
+    "a_context_interface_version": "A_INTERFACE_V1.2.1",
+    "historical_precomputed_source": "frozen_B_prediction_from_original_Stage2",
+    "predicted_class": "Direct",
+    "decision_threshold": 0.5,
+    "probability_calibration": "uncalibrated"
+  },
+  "arr_to_ber_prediction": {
+    "source_type": "unavailable/not_applicable",
+    "reason": "no_frozen_prediction_available_at_replay_time",
+    "task": "ARR_TO_BER"
+  },
+  "b_runtime_qc": {
+    "mode": "frozen_precomputed_prediction_display_only",
+    "recompute_allowed": false,
+    "blocking_qc_flags": [
+      "demo_does_not_recompute_frozen_B_features"
+    ]
+  },
+  "historical_truth": {
+    "source_type": "unavailable/not_applicable",
+    "note": "Future and evaluation-only truth is omitted from the C input contract."
+  }
+}

@@ -1,0 +1,11 @@
+# Frozen datasets and models are tracked for reproducible Streamlit deployment.
+*.zip
+
+# Local runtime artifacts
+**/__pycache__/
+*.py[cod]
+*.pyc
+.venv/
+.streamlit/secrets.toml
+*.log
+Thumbs.db

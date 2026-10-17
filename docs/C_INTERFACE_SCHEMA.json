@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A+B v1.2.1 online-safe historical replay input for C",
+  "type": "object",
+  "required": [
+    "interface_version",
+    "a_interface_version",
+    "b_interface_version",
+    "record_type",
+    "port_call_id",
+    "mmsi",
+    "current_replay_time_utc",
+    "current_ais",
+    "port_status",
+    "observed_formal_events",
+    "vat_prediction",
+    "direct_indirect_prediction",
+    "arr_to_ber_prediction"
+  ],
+  "properties": {
+    "interface_version": {"const": "A_B_C_replay_interface_v1_2_1"},
+    "a_interface_version": {"const": "A_INTERFACE_V1.2.1"},
+    "b_interface_version": {"type": "string"},
+    "record_type": {"const": "A_B_historical_replay_input_for_C"},
+    "port_call_id": {"type": "string"},
+    "mmsi": {"type": "string"},
+    "current_replay_time_utc": {"type": "string", "format": "date-time"},
+    "current_a_status": {"type": "object"},
+    "current_ais": {"type": "object"},
+    "port_status": {"type": "object"},
+    "observed_formal_events": {"type": "array", "maxItems": 0},
+    "formal_event_online_input_policy": {
+      "const": "disabled_unverified_availability_a_v1_2_1"
+    },
+    "vat_prediction": {"type": "object"},
+    "direct_indirect_prediction": {"type": "object"},
+    "arr_to_ber_prediction": {"type": "object"},
+    "b_runtime_qc": {"type": "object"},
+    "historical_truth": {"type": "object"}
+  },
+  "additionalProperties": true
+}
+
