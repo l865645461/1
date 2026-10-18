@@ -548,6 +548,17 @@ st.markdown("""
 }
 .context-strip span { display:block; color:var(--ink-600); font-size:.76rem; margin-bottom:.22rem; }
 .context-strip strong { display:block; color:var(--ink-900); font-size:.92rem; overflow-wrap:anywhere; }
+.nav-guide {
+    display:flex; align-items:center; gap:.85rem; margin:1rem 0 .65rem;
+    padding:.85rem 1rem; border-radius:14px;
+    background:linear-gradient(90deg,#e6f4f5 0%,#eef6fb 100%);
+    border:1px solid #badde0; color:#294c61;
+}
+.nav-guide b {
+    flex:0 0 auto; padding:.32rem .62rem; border-radius:8px;
+    background:#0b6573; color:white; font-size:.82rem;
+}
+.nav-guide span { font-size:.9rem; line-height:1.45; }
 .sidebar-brand { padding:.25rem 0 1rem; }
 .sidebar-brand strong { color:#0b3d62; font-size:1.1rem; }
 .sidebar-brand span { display:block; color:#647789; font-size:.82rem; margin-top:.25rem; }
@@ -577,17 +588,27 @@ div[data-testid="stMetricDelta"] > div {
     font-size: .92rem !important;
 }
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: .65rem; padding: .45rem; border-radius: 16px;
+    gap: .65rem; padding: .5rem; border-radius: 17px;
     background: #e7eff5; border: 1px solid #d4e1ea;
 }
 [data-testid="stTabs"] button[role="tab"] {
-    height: 50px; border-radius: 12px; padding: 0 1.25rem;
+    flex:1 1 0 !important; min-width:0 !important;
+    height: 58px; border-radius: 13px; padding: 0 .8rem;
     color: #385269 !important; font-weight: 750 !important;
     background: rgba(255,255,255,.58) !important;
     border: 1px solid #cbdbe6 !important;
+    cursor:pointer !important; justify-content:center !important;
     transition: background .18s ease, color .18s ease, box-shadow .18s ease;
 }
-[data-testid="stTabs"] button[role="tab"] p { color: inherit !important; font-weight: inherit !important; }
+[data-testid="stTabs"] button[role="tab"] p {
+    color: inherit !important; font-weight: inherit !important;
+    font-size:.9rem !important; text-align:center !important;
+}
+[data-testid="stTabs"] button[role="tab"]:nth-of-type(2):not([aria-selected="true"]) {
+    color:#08756d !important; background:#e7faf5 !important;
+    border:2px solid #3bb8a5 !important;
+    box-shadow:0 4px 12px rgba(14,165,168,.12) !important;
+}
 [data-testid="stTabs"] button[role="tab"]:hover {
     color: #0b5c7d !important; background: white !important;
 }
@@ -605,6 +626,9 @@ hr { border-color: #dfe8ef; }
 @media (max-width: 900px) {
     .jit-hero { padding:1.55rem 1.35rem; border-radius:18px; }
     .context-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .nav-guide { align-items:flex-start; }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] { flex-wrap:wrap; }
+    [data-testid="stTabs"] button[role="tab"] { flex:1 1 46% !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -788,9 +812,13 @@ st.markdown(
     unsafe_allow_html=True)
 st.caption("查询窗口：{} → {}（{}；{}）".format(
     utc_text(start), utc_text(end), start_rule, end_rule))
+st.markdown(
+    '<div class="nav-guide"><b>点击切换模块</b>'
+    '<span>建议评委重点查看 <strong>02｜JIT节油与减排</strong>，可直接查看单船航速、节油量和CO₂减排情景。</span></div>',
+    unsafe_allow_html=True)
 
 overview_tab, scenario_tab, track_tab, method_tab = st.tabs([
-    "01 运行总览", "02 JIT情景", "03 轨迹与事件", "04 数据与方法"])
+    "01｜运行总览", "02｜JIT节油与减排 ★", "03｜船舶轨迹与事件", "04｜数据与方法"])
 
 with overview_tab:
     st.subheader("港口运行快照")
