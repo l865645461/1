@@ -40,10 +40,10 @@ STATUS_CARDS = [
 ]
 
 CASE_IDS = {
-    "节油结果示例（推荐）": "PC_202401_477166500_20240123T172010",
-    "Indirect完整访问": "PC_202401_211886810_20240106T041143",
-    "Direct完整访问": "PC_202401_538009831_20240101T235432",
-    "缺少UNB/DEP": "PC_202401_414688000_20240101T021420",
+    "案例1｜节油情景完整（推荐）": "PC_202401_477166500_20240123T172010",
+    "案例2｜锚泊后靠泊完整访问": "PC_202401_211886810_20240106T041143",
+    "案例3｜直接靠泊完整访问": "PC_202401_538009831_20240101T235432",
+    "案例4｜访问结束事件不完整": "PC_202401_414688000_20240101T021420",
 }
 LABEL_TEXT = {
     "direct": "直接靠泊 Direct",
@@ -244,8 +244,9 @@ def render_b_prediction_panel(*, call, label, replay_time, show_future_truth, pr
             message = "该访问不属于 ARR=high 且 BER=high 的326条主模型适用样本。"
             if is_high_high:
                 message = (
-                    "C安全接口中ARR→BER保持不可用：当前Demo没有独立在线Gate到达触发，"
-                    "不能把最终ARR历史事件当作在线触发器。")
+                    "ARR→BER预测暂未启用。为确保时间因果安全，本Demo仅在获得独立的"
+                    "Gate到达信号后启用该预测；当前未提供该在线信号，因此不会使用事后"
+                    "ARR记录代替实时触发。")
             st.info(message)
         else:
             st.metric("预测 ARR→BER", "{:.2f} min".format(float(wait["prediction"])))
@@ -482,6 +483,23 @@ def render_wait_driven_jit_diagnostics(*, diagnostics, port_call_id):
 
 
 st.set_page_config(page_title="洋山港 JIT 历史回放", layout="wide")
+st.markdown("""
+<style>
+/* 评审展示：避免宽屏四列指标被默认超大字号截断。 */
+div[data-testid="stMetricValue"] > div {
+    font-size: clamp(1.35rem, 2.0vw, 2rem) !important;
+    line-height: 1.18 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+}
+div[data-testid="stMetricLabel"] p {
+    font-size: clamp(.88rem, 1.2vw, 1.05rem) !important;
+}
+div[data-testid="stMetricDelta"] > div {
+    font-size: .92rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
 st.title("洋山港 JIT 历史回放")
 st.caption("观测状态、冻结预测、低碳影子情景与离线历史真值分层展示。")
 st.caption("研究回放，不是实际港口调度；正式执行建议始终以授权数据与港口规则为准。")
@@ -543,8 +561,16 @@ try:
         "典型案例", ["自由选择"] + list(CASE_IDS), index=1,
         key="demo_case_choice_v2")
     st.sidebar.caption(
-        "默认打开具有完整单船情景结果的示例。其他访问可能因不在冻结评估样本、"
-        "决策时刻尚未到达、AIS覆盖不足或航速超出6–20 kn范围而不显示燃油情景。")
+        "默认打开具有完整单船情景结果的案例。案例2展示锚泊后靠泊访问，"
+        "案例3展示直接靠泊访问；案例4用于说明访问结束事件不完整的情况。")
+    if case_choice == "案例4｜访问结束事件不完整":
+        st.sidebar.info(
+            "该访问缺少UNB（离泊）和DEP（离港）正式事件，用于展示数据不完整时的"
+            "透明标记方式。系统不会使用未来数据或人为补齐缺失事件。")
+    else:
+        st.sidebar.caption(
+            "部分访问可能因不在冻结评估样本、决策时刻尚未到达、AIS覆盖不足，或"
+            "航速超出6–20 kn研究范围而不显示燃油情景。")
     if st.session_state.get("_last_case_choice") != case_choice:
         if case_choice in CASE_IDS:
             chosen_id = CASE_IDS[case_choice]
