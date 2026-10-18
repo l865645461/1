@@ -40,7 +40,7 @@ STATUS_CARDS = [
 ]
 
 CASE_IDS = {
-    "C影子推荐案例": "PC_202401_477166500_20240123T172010",
+    "节油结果示例（推荐）": "PC_202401_477166500_20240123T172010",
     "Indirect完整访问": "PC_202401_211886810_20240106T041143",
     "Direct完整访问": "PC_202401_538009831_20240101T235432",
     "缺少UNB/DEP": "PC_202401_414688000_20240101T021420",
@@ -539,7 +539,12 @@ try:
     default_mmsi = str(selected_bundle(default_id)["port_call"]["mmsi"])
     mmsis = mmsi_options()
     st.sidebar.header("选择访问")
-    case_choice = st.sidebar.selectbox("典型案例", ["自由选择"] + list(CASE_IDS))
+    case_choice = st.sidebar.selectbox(
+        "典型案例", ["自由选择"] + list(CASE_IDS), index=1,
+        key="demo_case_choice_v2")
+    st.sidebar.caption(
+        "默认打开具有完整单船情景结果的示例。其他访问可能因不在冻结评估样本、"
+        "决策时刻尚未到达、AIS覆盖不足或航速超出6–20 kn范围而不显示燃油情景。")
     if st.session_state.get("_last_case_choice") != case_choice:
         if case_choice in CASE_IDS:
             chosen_id = CASE_IDS[case_choice]
@@ -743,3 +748,4 @@ with st.expander("方法与数据口径说明"):
 8. Main/West不是官方泊位边界，也不是官方泊位容量或泊位利用率。
 
 ARR/ANC/BER/UNB/DEP是离线确定版历史事件真值；Port Status是按当时可获得AIS构建的在线安全状态。ANC/BER等事件有确认窗口，两者的时间可能不同。地图AIS、当前AIS、Port Status快照均不得晚于回放时刻。""")
+
