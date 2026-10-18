@@ -577,16 +577,26 @@ div[data-testid="stMetricDelta"] > div {
     font-size: .92rem !important;
 }
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
-    gap: .4rem; padding: .35rem; border-radius: 15px;
-    background: #eaf1f6; border: 1px solid #d9e4ed;
+    gap: .65rem; padding: .45rem; border-radius: 16px;
+    background: #e7eff5; border: 1px solid #d4e1ea;
 }
 [data-testid="stTabs"] button[role="tab"] {
-    height: 44px; border-radius: 11px; padding: 0 1.15rem;
-    color: #40576b; font-weight: 700;
+    height: 50px; border-radius: 12px; padding: 0 1.25rem;
+    color: #385269 !important; font-weight: 750 !important;
+    background: rgba(255,255,255,.58) !important;
+    border: 1px solid #cbdbe6 !important;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+[data-testid="stTabs"] button[role="tab"] p { color: inherit !important; font-weight: inherit !important; }
+[data-testid="stTabs"] button[role="tab"]:hover {
+    color: #0b5c7d !important; background: white !important;
 }
 [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-    background: white; color: #0b5c7d; box-shadow: 0 4px 12px rgba(30, 66, 91, .10);
+    background: linear-gradient(135deg, #0b3d62 0%, #0b7480 100%) !important;
+    color: white !important; border-color: #0b5c72 !important;
+    box-shadow: 0 8px 18px rgba(11, 61, 98, .24) !important;
 }
+[data-testid="stTabs"] [data-baseweb="tab-highlight"] { display: none !important; }
 [data-testid="stAlert"] { border-radius: 14px; border-width: 1px; }
 [data-testid="stExpander"] { background:white; border:1px solid var(--line); border-radius:14px; }
 [data-testid="stDataFrame"] { border:1px solid var(--line); border-radius:14px; overflow:hidden; }
