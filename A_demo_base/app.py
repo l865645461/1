@@ -308,27 +308,32 @@ def render_c_panel(*, port_call_id, replay_time, show_future_truth, results):
                     "冻结研究结论为“保持原方案”。下方数值用于展示若采用PVAT对齐航速时的"
                     "参数化对比，不代表该船应当实际降速。")
             st.markdown("#### 参数化航速与低碳情景")
+            saving_rate = (
+                float(scenario["fuel_saved_t"]) / float(scenario["baseline_fuel_t"]) * 100
+                if float(scenario["baseline_fuel_t"]) > 0 else 0.0)
             primary_metrics = st.columns(4)
             primary_metrics[0].metric(
                 "当前速度", "{} kn".format(value_text(scenario["current_speed_kn"])))
             primary_metrics[1].metric(
-                "研究RTA候选", utc_text(scenario["recommended_rta_utc"]))
-            primary_metrics[2].metric(
                 "建议速度（研究）", "{} kn".format(value_text(scenario["suggested_speed_kn"], 3)),
                 delta="-{:.3f} kn".format(
                     float(scenario["current_speed_kn"]) - float(scenario["suggested_speed_kn"])))
+            primary_metrics[2].metric(
+                "情景节油量", "{} t".format(value_text(scenario["fuel_saved_t"], 4)),
+                delta="{:.1f}%".format(saving_rate))
             primary_metrics[3].metric(
-                "可利用等待时间", "{} h".format(value_text(scenario["usable_wait_h"], 3)))
+                "情景CO₂减排", "{} t".format(value_text(scenario["co2_reduced_t"], 4)),
+                delta="{:.1f}%".format(saving_rate))
 
             fuel_metrics = st.columns(4)
             fuel_metrics[0].metric(
-                "原方案燃油", "{} t".format(value_text(scenario["baseline_fuel_t"], 4)))
+                "研究RTA候选", utc_text(scenario["recommended_rta_utc"]))
             fuel_metrics[1].metric(
-                "JIT情景燃油", "{} t".format(value_text(scenario["jit_fuel_t"], 4)))
+                "可利用等待时间", "{} h".format(value_text(scenario["usable_wait_h"], 3)))
             fuel_metrics[2].metric(
-                "情景节油量", "{} t".format(value_text(scenario["fuel_saved_t"], 4)))
+                "原方案燃油", "{} t".format(value_text(scenario["baseline_fuel_t"], 4)))
             fuel_metrics[3].metric(
-                "情景CO₂减排", "{} t".format(value_text(scenario["co2_reduced_t"], 4)))
+                "JIT情景燃油", "{} t".format(value_text(scenario["jit_fuel_t"], 4)))
 
             st.caption("RTA候选规则：**{}**".format(
                 scenario["selected_rta_candidate_id"]))
