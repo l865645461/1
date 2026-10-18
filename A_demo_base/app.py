@@ -303,13 +303,18 @@ def render_c_panel(*, port_call_id, replay_time, show_future_truth, results):
             st.caption("QC：{}；原因：{}".format(
                 early.get("qc_flag"), early.get("research_recommendation_reason")))
         else:
+            if str(early["research_recommendation"]) == "保持原方案":
+                st.info(
+                    "冻结研究结论为“保持原方案”。下方数值用于展示若采用PVAT对齐航速时的"
+                    "参数化对比，不代表该船应当实际降速。")
+            st.markdown("#### 参数化航速与低碳情景")
             primary_metrics = st.columns(4)
             primary_metrics[0].metric(
                 "当前速度", "{} kn".format(value_text(scenario["current_speed_kn"])))
             primary_metrics[1].metric(
-                "推荐RTA", utc_text(scenario["recommended_rta_utc"]))
+                "研究RTA候选", utc_text(scenario["recommended_rta_utc"]))
             primary_metrics[2].metric(
-                "建议速度", "{} kn".format(value_text(scenario["suggested_speed_kn"], 3)),
+                "建议速度（研究）", "{} kn".format(value_text(scenario["suggested_speed_kn"], 3)),
                 delta="-{:.3f} kn".format(
                     float(scenario["current_speed_kn"]) - float(scenario["suggested_speed_kn"])))
             primary_metrics[3].metric(
@@ -319,11 +324,11 @@ def render_c_panel(*, port_call_id, replay_time, show_future_truth, results):
             fuel_metrics[0].metric(
                 "原方案燃油", "{} t".format(value_text(scenario["baseline_fuel_t"], 4)))
             fuel_metrics[1].metric(
-                "JIT方案燃油", "{} t".format(value_text(scenario["jit_fuel_t"], 4)))
+                "JIT情景燃油", "{} t".format(value_text(scenario["jit_fuel_t"], 4)))
             fuel_metrics[2].metric(
-                "节油量", "{} t".format(value_text(scenario["fuel_saved_t"], 4)))
+                "情景节油量", "{} t".format(value_text(scenario["fuel_saved_t"], 4)))
             fuel_metrics[3].metric(
-                "CO₂减排", "{} t".format(value_text(scenario["co2_reduced_t"], 4)))
+                "情景CO₂减排", "{} t".format(value_text(scenario["co2_reduced_t"], 4)))
 
             st.caption("RTA候选规则：**{}**".format(
                 scenario["selected_rta_candidate_id"]))
@@ -485,24 +490,123 @@ def render_wait_driven_jit_diagnostics(*, diagnostics, port_call_id):
 st.set_page_config(page_title="洋山港 JIT 历史回放", layout="wide")
 st.markdown("""
 <style>
-/* 评审展示：避免宽屏四列指标被默认超大字号截断。 */
+/* 评审展示主题：深海蓝、港口青与低碳绿。 */
+:root {
+    --ocean-950: #071b2f;
+    --ocean-900: #0b2945;
+    --ocean-700: #105c86;
+    --harbor-500: #0ea5a8;
+    --green-500: #22a06b;
+    --ink-900: #142235;
+    --ink-600: #536578;
+    --line: #dce6ef;
+    --canvas: #f4f7fb;
+}
+.stApp { background: var(--canvas); color: var(--ink-900); }
+.block-container { max-width: 1480px; padding-top: 1.5rem; padding-bottom: 4rem; }
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #f7fbff 0%, #edf4f8 100%);
+    border-right: 1px solid #d9e5ed;
+}
+[data-testid="stSidebar"] .block-container { padding-top: 1.4rem; }
+.jit-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 2.1rem 2.35rem 1.9rem;
+    border-radius: 24px;
+    color: white;
+    background:
+        radial-gradient(circle at 88% 20%, rgba(38, 190, 190, .30), transparent 28%),
+        linear-gradient(125deg, #071b2f 0%, #0b3d62 58%, #0b6a72 100%);
+    box-shadow: 0 18px 42px rgba(7, 27, 47, .18);
+    margin-bottom: 1.15rem;
+}
+.jit-hero::after {
+    content: "";
+    position: absolute;
+    width: 260px; height: 260px; right: -90px; bottom: -170px;
+    border: 1px solid rgba(255,255,255,.20); border-radius: 50%;
+    box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 60px rgba(255,255,255,.025);
+}
+.jit-eyebrow { font-size: .78rem; letter-spacing: .16em; font-weight: 750; opacity: .76; }
+.jit-hero h1 { color: white; font-size: clamp(2rem, 3.5vw, 3.35rem); line-height: 1.08; margin: .5rem 0 .65rem; }
+.jit-hero p { max-width: 800px; margin: 0; color: rgba(255,255,255,.80); font-size: 1rem; line-height: 1.7; }
+.jit-tags { display:flex; gap:.55rem; flex-wrap:wrap; margin-top:1.25rem; }
+.jit-tag { padding:.38rem .72rem; border-radius:999px; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.09); font-size:.78rem; }
+.context-strip {
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem;
+    margin:.85rem 0 .7rem;
+}
+.context-strip > div {
+    background:white; border:1px solid var(--line); border-radius:14px;
+    padding:.78rem .95rem; box-shadow:0 5px 16px rgba(25,58,84,.04);
+}
+.context-strip span { display:block; color:var(--ink-600); font-size:.76rem; margin-bottom:.22rem; }
+.context-strip strong { display:block; color:var(--ink-900); font-size:.92rem; overflow-wrap:anywhere; }
+.sidebar-brand { padding:.25rem 0 1rem; }
+.sidebar-brand strong { color:#0b3d62; font-size:1.1rem; }
+.sidebar-brand span { display:block; color:#647789; font-size:.82rem; margin-top:.25rem; }
+h2, h3 { color: var(--ink-900); letter-spacing: -.015em; }
+[data-testid="stMetric"] {
+    background: rgba(255,255,255,.94);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1rem 1.05rem;
+    min-height: 118px;
+    box-shadow: 0 7px 20px rgba(25, 58, 84, .055);
+}
 div[data-testid="stMetricValue"] > div {
-    font-size: clamp(1.35rem, 2.0vw, 2rem) !important;
+    font-size: clamp(1.25rem, 1.75vw, 1.85rem) !important;
     line-height: 1.18 !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
+    color: var(--ink-900) !important;
+    letter-spacing: -.025em;
 }
 div[data-testid="stMetricLabel"] p {
-    font-size: clamp(.88rem, 1.2vw, 1.05rem) !important;
+    font-size: clamp(.82rem, 1vw, .98rem) !important;
+    color: var(--ink-600) !important;
+    font-weight: 650 !important;
 }
 div[data-testid="stMetricDelta"] > div {
     font-size: .92rem !important;
 }
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    gap: .4rem; padding: .35rem; border-radius: 15px;
+    background: #eaf1f6; border: 1px solid #d9e4ed;
+}
+[data-testid="stTabs"] button[role="tab"] {
+    height: 44px; border-radius: 11px; padding: 0 1.15rem;
+    color: #40576b; font-weight: 700;
+}
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    background: white; color: #0b5c7d; box-shadow: 0 4px 12px rgba(30, 66, 91, .10);
+}
+[data-testid="stAlert"] { border-radius: 14px; border-width: 1px; }
+[data-testid="stExpander"] { background:white; border:1px solid var(--line); border-radius:14px; }
+[data-testid="stDataFrame"] { border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.stButton > button, .stDownloadButton > button { border-radius: 11px; font-weight: 700; }
+hr { border-color: #dfe8ef; }
+@media (max-width: 900px) {
+    .jit-hero { padding:1.55rem 1.35rem; border-radius:18px; }
+    .context-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
 </style>
 """, unsafe_allow_html=True)
-st.title("洋山港 JIT 历史回放")
-st.caption("观测状态、冻结预测、低碳影子情景与离线历史真值分层展示。")
-st.caption("研究回放，不是实际港口调度；正式执行建议始终以授权数据与港口规则为准。")
+st.markdown("""
+<section class="jit-hero">
+  <div class="jit-eyebrow">YANGSHAN PORT · HISTORICAL SHADOW DECISION</div>
+  <h1>洋山港 JIT 航速优化研究平台</h1>
+  <p>将港口观测、冻结预测与低碳航速情景放在同一条时间轴上，展示单船从历史回放到节油与减排估算的完整证据链。</p>
+  <div class="jit-tags">
+    <span class="jit-tag">历史影子决策</span>
+    <span class="jit-tag">时间因果安全</span>
+    <span class="jit-tag">参数化情景估算</span>
+    <span class="jit-tag">A_INTERFACE_V1.2.1</span>
+  </div>
+</section>
+""", unsafe_allow_html=True)
+st.info("展示定位：研究验证与历史回放，不替代港口正式调度。正式执行仍需官方泊位计划、可航路线、船舶真实油耗曲线及港口授权。")
 
 
 @st.cache_data(show_spinner=False)
@@ -556,9 +660,12 @@ try:
     default_id = pick_sample_port_call()
     default_mmsi = str(selected_bundle(default_id)["port_call"]["mmsi"])
     mmsis = mmsi_options()
-    st.sidebar.header("选择访问")
+    st.sidebar.markdown(
+        '<div class="sidebar-brand"><strong>历史回放控制台</strong>'
+        '<span>选择案例、船舶与访问记录</span></div>',
+        unsafe_allow_html=True)
     case_choice = st.sidebar.selectbox(
-        "典型案例", ["自由选择"] + list(CASE_IDS), index=1,
+        "第一步 · 选择典型案例", ["自由选择"] + list(CASE_IDS), index=1,
         key="demo_case_choice_v2")
     st.sidebar.caption(
         "默认打开具有完整单船情景结果的案例。案例2展示锚泊后靠泊访问，"
@@ -579,7 +686,7 @@ try:
         st.session_state["_last_case_choice"] = case_choice
     if st.session_state.get("demo_mmsi") not in mmsis:
         st.session_state["demo_mmsi"] = default_mmsi if default_mmsi in mmsis else mmsis[0]
-    mmsi = st.sidebar.selectbox("MMSI", mmsis, key="demo_mmsi")
+    mmsi = st.sidebar.selectbox("第二步 · 选择船舶 MMSI", mmsis, key="demo_mmsi")
     visits = port_calls_for(mmsi)
     if visits.empty:
         st.warning("该MMSI没有已发布的Port Call")
@@ -593,8 +700,14 @@ try:
     if st.session_state.get("demo_port_call") not in visit_ids:
         st.session_state["demo_port_call"] = default_id if default_id in visit_ids else visit_ids[0]
     port_call_id = st.sidebar.selectbox(
-        "Port Call", visit_ids, key="demo_port_call",
+        "第三步 · 选择访问记录", visit_ids, key="demo_port_call",
         format_func=lambda item: visit_labels[item])
+    with st.sidebar.expander("评委讲解建议", expanded=False):
+        st.markdown(
+            "1. 在“运行总览”查看当时港口状态与冻结预测。\n"
+            "2. 在“JIT情景”查看单船航速、燃油和CO₂结果。\n"
+            "3. 在“轨迹与事件”核对AIS轨迹和正式事件链。\n"
+            "4. 在“数据与方法”查看诊断、接口与研究边界。")
     bundle = selected_bundle(port_call_id)
     call, label, events = bundle["port_call"], bundle["label"], bundle["events"]
     if str(call["mmsi"]) != mmsi or not events.port_call_id.eq(port_call_id).all():
@@ -650,128 +763,151 @@ except Exception as exc:
     st.error("只读历史回放加载失败：{}".format(exc))
     st.stop()
 
-st.caption("查询窗口：{} → {}（{}；{}）；本次回放：{}。".format(
-    utc_text(start), utc_text(end), start_rule, end_rule, utc_text(replay_time)))
-st.subheader("洋山港动态运行状态 · 在线安全历史快照")
-cards = st.columns(4)
-for index, (title, field, help_text) in enumerate(STATUS_CARDS):
-    cards[index % 4].metric(title, "—" if snapshot is None else str(int(snapshot[field])),
-                            help=help_text)
-if snapshot is None:
-    st.warning("当前回放时间之前没有Port Status快照；不使用未来快照填补。")
-else:
-    st.caption("Port Status snapshot: {}　|　Replay time: {}　|　Snapshot age: {:.2f} min".format(
-        utc_text(snapshot["snapshot_time_utc"]), utc_text(replay_time), snapshot_age_min))
-    if snapshot_age_min >= 10:
-        st.error("Port Status快照超过正常10分钟粒度，需复核数据覆盖。")
-    with st.expander("Gate raw crossing诊断（非船舶数量）"):
-        st.write("observed_inbound_gate_crossings_60m: {}；observed_outbound_gate_crossings_60m: {}".format(
-            snapshot["observed_inbound_gate_crossings_60m"],
-            snapshot["observed_outbound_gate_crossings_60m"]))
-        st.caption("Gate observed crossings，可能包含同船重复穿越，不等于船舶数量。")
+st.markdown(
+    '<div class="context-strip"><div><span>当前船舶</span><strong>{}</strong></div>'
+    '<div><span>访问类型</span><strong>{}</strong></div>'
+    '<div><span>历史阶段</span><strong>{}</strong></div>'
+    '<div><span>回放时刻</span><strong>{}</strong></div></div>'.format(
+        escape(mmsi), escape(LABEL_TEXT.get(str(label["final_label"]), str(label["final_label"]))),
+        escape(historical_stage(events, replay_time)), escape(replay_time.strftime("%Y-%m-%d %H:%M UTC"))),
+    unsafe_allow_html=True)
+st.caption("查询窗口：{} → {}（{}；{}）".format(
+    utc_text(start), utc_text(end), start_rule, end_rule))
 
-render_b_prediction_panel(
-    call=call, label=label, replay_time=replay_time,
-    show_future_truth=show_future_truth, predictions=predictions,
-    observed_chain=observed_chain, a_stage=historical_stage(events, replay_time))
-render_c_panel(
-    port_call_id=port_call_id, replay_time=replay_time,
-    show_future_truth=show_future_truth, results=c_results)
-render_wait_driven_jit_diagnostics(
-    diagnostics=c_diagnostics, port_call_id=port_call_id)
-st.download_button(
-    "导出当前回放标准接口 JSON",
-    data=json.dumps(c_record, ensure_ascii=False, indent=2, allow_nan=False),
-    file_name="c_interface_{}_{}.json".format(
-        port_call_id, replay_time.strftime("%Y%m%dT%H%M%SZ")),
-    mime="application/json",
-    help=("只包含截至当前回放时刻的观测与在线安全预测；"
-          "不包含lead_time_min、未来事件或evaluation-only字段。"),
-)
-st.subheader("当前船舶状态")
-st.caption("Port Call ID：{}　|　MMSI：{}　|　Replay time UTC：{}".format(
-    port_call_id, mmsi, utc_text(replay_time)))
-if current is None:
-    st.info("回放时刻以前在本访问查询窗口内尚无AIS；不伪造当前位置。")
-else:
-    region = current_spatial_region(SOURCES["geofence"], current["lon"], current["lat"])
-    st.write("当前AIS时间：**{}**　｜　AIS age：**{} min**　｜　当前空间区域：**{}**".format(
-        utc_text(current["timestamp_utc"]), value_text(ais_age_min), region))
-    vessel_cols = st.columns(4)
-    for index, (title, value) in enumerate([
-        ("当前经度", value_text(current["lon"], 6)),
-        ("当前纬度", value_text(current["lat"], 6)),
-        ("当前SOG kn", value_text(current["sog_knots"])),
-        ("当前COG deg", value_text(current["cog_deg"])),
-    ]):
-        vessel_cols[index % 4].metric(title, value)
-    if ais_age_min > 10:
-        st.warning("AIS状态可能过期；仅显示最后一个真实AIS点，不外推当前位置。")
+overview_tab, scenario_tab, track_tab, method_tab = st.tabs([
+    "01 运行总览", "02 JIT情景", "03 轨迹与事件", "04 数据与方法"])
 
-st.info("当前历史阶段：{}。仅依据已发布历史事件的时间进行展示，不重新识别事件或预测。".format(
-    historical_stage(events, replay_time)))
-st.subheader("截至回放时刻的空间轨迹与事件")
-components.html(map_view.get_root().render(), height=670, scrolling=False)
-st.caption("查询窗口AIS共{}点；截至回放时刻{}点；地图显示{}点（仅显示副本抽稀）。BER不伪造单点坐标。".format(
-    len(ais), len(history), map_info["ais_display_count"]))
-st.caption("确定版GeoJSON已加载{}个对象。".format(len(map_info["geojson_objects"])))
-
-st.subheader("截至当前回放时刻的访问摘要")
-st.caption("离线访问标签为最终历史真值；未来事件时间默认隐藏，仅在开启完整历史真值后显示。")
-summary_intervals = chain_intervals(chain)
-label_raw = str(label["final_label"])
-summary_items = [
-    ("MMSI", mmsi), ("Port Call ID", port_call_id),
-    ("最终访问类型", LABEL_TEXT.get(label_raw, label_raw)),
-    ("标签置信度", str(label["label_confidence"])),
-]
-st.caption("原始标签值：{}".format(label_raw))
-linked_anc = chain.loc[chain.event_type.eq("ANC")]
-if not linked_anc.empty:
-    anc_text = "是（{}次）".format(len(linked_anc))
-elif events.event_type.eq("ANC").any() and not show_future_truth:
-    anc_text = "—"
-else:
-    anc_text = "否"
-summary_items.append(("关联锚泊 ANC", anc_text))
-summary_items.append(("到港 ARR", event_time_text(chain, "ARR")))
-for title, kind in [("靠泊 BER", "BER"), ("离泊 UNB", "UNB"), ("离港 DEP", "DEP")]:
-    value, note = summary_event_display(events, chain, kind)
-    summary_items.append((title, value, note))
-summary_items.extend((title, interval_text(summary_intervals, key)) for title, key in [
-    ("锚泊结束至到港", "ANC end→ARR min"),
-    ("到港至靠泊历时", "ARR→BER min"),
-    ("靠泊至离泊历时", "BER→UNB min"),
-    ("离泊至离港历时", "UNB→DEP min"),
-])
-render_summary_cards(summary_items)
-
-st.subheader("船舶访问事件时间轴")
-st.caption("默认仅显示截至当前回放时刻已发生的正式事件；开启“显示完整历史真值事件链”后，可查看后续历史事件，其中未来事件仅作为离线历史真值展示。")
-render_timeline(chain)
-with st.expander("详细事件数据"):
-    if chain.empty:
-        st.write("—")
+with overview_tab:
+    st.subheader("港口运行快照")
+    st.caption("所有状态均取自回放时刻及以前的数据，不使用未来AIS或未来Port Status。")
+    cards = st.columns(4)
+    for index, (title, field, help_text) in enumerate(STATUS_CARDS):
+        cards[index % 4].metric(title, "—" if snapshot is None else str(int(snapshot[field])),
+                                help=help_text)
+    if snapshot is None:
+        st.warning("当前回放时间之前没有Port Status快照；不使用未来快照填补。")
     else:
-        table = chain[["event_id", "event_type", "event_time_utc", "event_end_time_utc",
-                       "confidence_level", "qc_flag", "replay_status", "replay_note"]].copy()
-        def shade_future(row):
-            style = "color: #9ca3af; background-color: #f3f4f6" if row["replay_status"] == "future" else ""
-            return [style] * len(row)
-        st.dataframe(table.style.apply(shade_future, axis=1),
-                     use_container_width=True, hide_index=True)
-if show_future_truth:
-    st.caption("灰色事件为历史真值 · 当时尚未知（Ground truth future event — not available as online input）。")
-with st.expander("方法与数据口径说明"):
-    st.markdown("""
-1. 到港 ARR：船舶由海侧向港侧有效穿越研究定义Arrival Gate。
-2. 锚泊 ANC：基于No.1官方锚地区域及低速持续停留规则识别。
-3. 靠泊 BER：基于Main/West研究泊位区域的稳定低速停留识别；不伪造单点坐标。
-4. 离泊 UNB：最终持续离开联合泊位区域。
-5. 离港 DEP：沿离港方向穿越与ARR相同的Arrival Gate。
-6. Port Status每10分钟构建一次，只使用当时及之前AIS信息。
-7. No.1 Anchorage及Pilot Points来源于已有官方／公开空间定义；Arrival Gate、External Approach、Main/West为本研究空间定义。
-8. Main/West不是官方泊位边界，也不是官方泊位容量或泊位利用率。
+        st.caption("快照时间：{}　｜　回放时间：{}　｜　快照年龄：{:.2f} min".format(
+            utc_text(snapshot["snapshot_time_utc"]), utc_text(replay_time), snapshot_age_min))
+        if snapshot_age_min >= 10:
+            st.error("Port Status快照超过正常10分钟粒度，需复核数据覆盖。")
+        with st.expander("Gate穿越诊断（穿越次数，不代表船舶数量）"):
+            st.write("近60分钟进港穿越次数：{}；近60分钟出港穿越次数：{}".format(
+                snapshot["observed_inbound_gate_crossings_60m"],
+                snapshot["observed_outbound_gate_crossings_60m"]))
+            st.caption("同一船舶可能重复穿越，因此页面流量指标优先使用去重船舶数。")
+    st.divider()
+    render_b_prediction_panel(
+        call=call, label=label, replay_time=replay_time,
+        show_future_truth=show_future_truth, predictions=predictions,
+        observed_chain=observed_chain, a_stage=historical_stage(events, replay_time))
 
-ARR/ANC/BER/UNB/DEP是离线确定版历史事件真值；Port Status是按当时可获得AIS构建的在线安全状态。ANC/BER等事件有确认窗口，两者的时间可能不同。地图AIS、当前AIS、Port Status快照均不得晚于回放时刻。""")
+with scenario_tab:
+    render_c_panel(
+        port_call_id=port_call_id, replay_time=replay_time,
+        show_future_truth=show_future_truth, results=c_results)
+
+with track_tab:
+    st.subheader("当前船舶状态")
+    st.caption("Port Call ID：{}　｜　MMSI：{}　｜　回放时刻：{}".format(
+        port_call_id, mmsi, utc_text(replay_time)))
+    if current is None:
+        st.info("回放时刻以前在本访问查询窗口内尚无AIS；不伪造当前位置。")
+    else:
+        region = current_spatial_region(SOURCES["geofence"], current["lon"], current["lat"])
+        st.write("当前AIS时间：**{}**　｜　AIS age：**{} min**　｜　当前空间区域：**{}**".format(
+            utc_text(current["timestamp_utc"]), value_text(ais_age_min), region))
+        vessel_cols = st.columns(4)
+        for index, (title, value) in enumerate([
+            ("当前经度", value_text(current["lon"], 6)),
+            ("当前纬度", value_text(current["lat"], 6)),
+            ("当前航速 SOG", "{} kn".format(value_text(current["sog_knots"]))),
+            ("当前航向 COG", "{}°".format(value_text(current["cog_deg"]))),
+        ]):
+            vessel_cols[index % 4].metric(title, value)
+        if ais_age_min > 10:
+            st.warning("AIS状态可能过期；仅显示最后一个真实AIS点，不外推当前位置。")
+
+    st.info("当前历史阶段：{}。仅依据已发布历史事件时间展示，不重新识别事件或预测。".format(
+        historical_stage(events, replay_time)))
+    st.subheader("空间轨迹与事件")
+    components.html(map_view.get_root().render(), height=670, scrolling=False)
+    st.caption("查询窗口AIS共{}点；截至回放时刻{}点；地图显示{}点（仅显示副本抽稀）。BER不伪造单点坐标。".format(
+        len(ais), len(history), map_info["ais_display_count"]))
+    st.caption("确定版GeoJSON已加载{}个对象。".format(len(map_info["geojson_objects"])))
+
+    st.subheader("访问摘要")
+    st.caption("离线访问标签为最终历史真值；未来事件默认隐藏，仅在开启完整历史真值后显示。")
+    summary_intervals = chain_intervals(chain)
+    label_raw = str(label["final_label"])
+    summary_items = [
+        ("MMSI", mmsi), ("Port Call ID", port_call_id),
+        ("最终访问类型", LABEL_TEXT.get(label_raw, label_raw)),
+        ("标签置信度", str(label["label_confidence"])),
+    ]
+    linked_anc = chain.loc[chain.event_type.eq("ANC")]
+    if not linked_anc.empty:
+        anc_text = "是（{}次）".format(len(linked_anc))
+    elif events.event_type.eq("ANC").any() and not show_future_truth:
+        anc_text = "—"
+    else:
+        anc_text = "否"
+    summary_items.append(("关联锚泊 ANC", anc_text))
+    summary_items.append(("到港 ARR", event_time_text(chain, "ARR")))
+    for title, kind in [("靠泊 BER", "BER"), ("离泊 UNB", "UNB"), ("离港 DEP", "DEP")]:
+        value, note = summary_event_display(events, chain, kind)
+        summary_items.append((title, value, note))
+    summary_items.extend((title, interval_text(summary_intervals, key)) for title, key in [
+        ("锚泊结束至到港", "ANC end→ARR min"),
+        ("到港至靠泊历时", "ARR→BER min"),
+        ("靠泊至离泊历时", "BER→UNB min"),
+        ("离泊至离港历时", "UNB→DEP min"),
+    ])
+    render_summary_cards(summary_items)
+
+    st.subheader("船舶访问事件时间轴")
+    st.caption("默认仅显示当时已经发生的正式事件；开启完整历史真值后，未来事件仅作为离线评价展示。")
+    render_timeline(chain)
+    with st.expander("查看详细事件数据"):
+        if chain.empty:
+            st.write("—")
+        else:
+            table = chain[["event_id", "event_type", "event_time_utc", "event_end_time_utc",
+                           "confidence_level", "qc_flag", "replay_status", "replay_note"]].copy()
+            def shade_future(row):
+                style = "color: #9ca3af; background-color: #f3f4f6" if row["replay_status"] == "future" else ""
+                return [style] * len(row)
+            st.dataframe(table.style.apply(shade_future, axis=1),
+                         use_container_width=True, hide_index=True)
+    if show_future_truth:
+        st.caption("灰色事件为历史真值 · 当时尚未知，不会进入当时的模型与决策输入。")
+
+with method_tab:
+    st.subheader("等待驱动JIT可用性诊断")
+    st.caption("用于回答是否具备提前降速吸收锚泊等待的证据；诊断结果与PVAT对齐情景分开呈现。")
+    render_wait_driven_jit_diagnostics(
+        diagnostics=c_diagnostics, port_call_id=port_call_id)
+    st.divider()
+    st.subheader("接口导出与方法口径")
+    st.download_button(
+        "下载当前回放标准接口 JSON",
+        data=json.dumps(c_record, ensure_ascii=False, indent=2, allow_nan=False),
+        file_name="c_interface_{}_{}.json".format(
+            port_call_id, replay_time.strftime("%Y%m%dT%H%M%SZ")),
+        mime="application/json",
+        help=("只包含截至当前回放时刻的观测与在线安全预测；"
+              "不包含lead_time_min、未来事件或evaluation-only字段。"),
+    )
+    with st.expander("查看事件定义与数据边界", expanded=True):
+        st.markdown("""
+1. **到港 ARR**：船舶由海侧向港侧有效穿越研究定义 Arrival Gate。
+2. **锚泊 ANC**：基于 No.1 官方锚地区域及低速持续停留规则识别。
+3. **靠泊 BER**：基于 Main/West 研究泊位区域的稳定低速停留识别；不伪造单点坐标。
+4. **离泊 UNB**：最终持续离开联合泊位区域。
+5. **离港 DEP**：沿离港方向穿越与 ARR 相同的 Arrival Gate。
+6. Port Status 每10分钟构建一次，只使用当时及以前的 AIS 信息。
+7. No.1 Anchorage及Pilot Points来源于已有官方／公开空间定义；Arrival Gate、External Approach、Main/West为研究空间定义。
+8. Main/West不是官方泊位边界，也不代表官方泊位容量或泊位利用率。
+
+ARR/ANC/BER/UNB/DEP是离线确定版历史事件真值；Port Status是按当时可获得AIS构建的在线安全状态。地图AIS、当前AIS和Port Status快照均不得晚于回放时刻。""")
 
